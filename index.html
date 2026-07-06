@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dual-Use Canvas — EuroSpaceHub Strasbourg</title>
+<style>
+  :root{
+    --bg: #0a1120;
+    --panel: #121b2e;
+    --panel-2: #16213a;
+    --line: #223252;
+    --text: #e7edf7;
+    --muted: #8fa2c4;
+    --cyan: #4fd1c5;
+    --cyan-dim: #2a5f5a;
+    --amber: #f5a623;
+    --red: #ef6461;
+    --violet: #a78bfa;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(79,209,197,0.08), transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(167,139,250,0.06), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    min-height:100vh;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:28px 20px 80px;}
+
+  /* header */
+  .hdr{
+    display:flex; flex-wrap:wrap; gap:18px; align-items:flex-start; justify-content:space-between;
+    border-bottom:1px solid var(--line); padding-bottom:20px; margin-bottom:22px;
+  }
+  .hdr-left{max-width:640px;}
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--cyan); margin:0 0 8px;
+  }
+  h1{font-size:26px; margin:0 0 8px; font-weight:650; letter-spacing:-0.01em;}
+  .sub{color:var(--muted); font-size:14.5px; margin:0;}
+  .badge{
+    font-family:var(--mono); font-size:11px; color:var(--muted);
+    border:1px solid var(--line); border-radius:6px; padding:6px 10px;
+    background:var(--panel); white-space:nowrap;
+  }
+  .badge b{color:var(--text);}
+
+  /* how-to */
+  details.howto{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    margin-bottom:22px; padding:2px 16px;
+  }
+  details.howto summary{
+    cursor:pointer; padding:12px 0; font-size:13.5px; color:var(--cyan); font-weight:600;
+    list-style:none;
+  }
+  details.howto summary::-webkit-details-marker{display:none;}
+  details.howto .body{padding:2px 0 16px; font-size:13.5px; color:var(--muted);}
+  details.howto .body ol{margin:6px 0 0; padding-left:18px;}
+  details.howto .body li{margin-bottom:6px;}
+  details.howto code{
+    font-family:var(--mono); background:var(--panel-2); padding:1px 6px; border-radius:4px; color:var(--cyan);
+  }
+
+  /* layout */
+  .grid{display:grid; grid-template-columns: 1.05fr 0.95fr; gap:22px;}
+  @media (max-width:920px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px;
+  }
+  .panel h2{
+    font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted);
+    margin:0 0 18px; font-family:var(--mono); display:flex; align-items:center; gap:8px;
+  }
+  .panel h2 .dot{width:7px; height:7px; border-radius:50%; background:var(--cyan); box-shadow:0 0 8px var(--cyan);}
+
+  label{display:block; font-size:13px; color:var(--text); font-weight:600; margin:16px 0 6px;}
+  label .hint{display:block; font-weight:400; color:var(--muted); font-size:12px; margin-top:2px;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], textarea, select{
+    width:100%; background:#0d1526; border:1px solid var(--line); border-radius:8px;
+    color:var(--text); padding:10px 12px; font-family:var(--sans); font-size:14px;
+    resize:vertical;
+  }
+  textarea{min-height:56px;}
+  input[type=text]:focus, textarea:focus, select:focus{
+    outline:2px solid var(--cyan); outline-offset:1px; border-color:var(--cyan);
+  }
+  ::placeholder{color:#4d5f82;}
+
+  .radio-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .radio-row label.opt{
+    flex:1; min-width:110px; margin:0; font-weight:500; font-size:13px;
+    border:1px solid var(--line); border-radius:8px; padding:9px 10px; text-align:center;
+    cursor:pointer; color:var(--muted); user-select:none;
+  }
+  .radio-row input{position:absolute; opacity:0; pointer-events:none;}
+  .radio-row label.opt.sel{border-color:var(--cyan); color:var(--cyan); background:rgba(79,209,197,0.08);}
+
+  .friction-ref{
+    margin-top:14px; padding:12px 14px; background:#0d1526; border:1px solid var(--line);
+    border-radius:8px; font-size:12px; color:var(--muted);
+  }
+  .friction-ref b{color:var(--text);}
+  .friction-ref div{margin-bottom:4px;}
+  .friction-ref div:last-child{margin-bottom:0;}
+
+  .submit-btn{
+    width:100%; margin-top:20px; padding:13px; border:none; border-radius:9px;
+    background:var(--cyan); color:#06201d; font-weight:700; font-size:14.5px; cursor:pointer;
+    font-family:var(--sans); letter-spacing:.01em;
+  }
+  .submit-btn:hover{background:#6ee0d5;}
+  .submit-btn:disabled{background:#2a5f5a; color:#7ea8a3; cursor:wait;}
+  .status-msg{font-size:12.5px; margin-top:10px; min-height:16px;}
+  .status-msg.ok{color:var(--cyan);}
+  .status-msg.err{color:var(--red);}
+
+  /* board */
+  .board-hdr{display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;}
+  .refresh-btn{
+    background:none; border:1px solid var(--line); color:var(--muted); font-family:var(--mono);
+    font-size:11px; padding:6px 10px; border-radius:7px; cursor:pointer;
+  }
+  .refresh-btn:hover{color:var(--cyan); border-color:var(--cyan);}
+  .empty{color:var(--muted); font-size:13.5px; padding:20px 0; text-align:center; border:1px dashed var(--line); border-radius:10px;}
+
+  .card{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:11px; padding:16px;
+    margin-bottom:14px; position:relative;
+  }
+  .card-top{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:10px;}
+  .card-title{font-weight:700; font-size:14.5px;}
+  .card-who{font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:2px;}
+  .tag{
+    font-family:var(--mono); font-size:10.5px; padding:3px 8px; border-radius:20px; white-space:nowrap;
+    border:1px solid; text-transform:uppercase; letter-spacing:.04em;
+  }
+  .tag.speed{color:var(--amber); border-color:var(--amber); background:rgba(245,166,35,0.08);}
+  .tag.open{color:var(--violet); border-color:var(--violet); background:rgba(167,139,250,0.08);}
+  .tag.sov{color:var(--red); border-color:var(--red); background:rgba(239,100,97,0.08);}
+  .tag.obj{color:var(--cyan); border-color:var(--cyan); background:rgba(79,209,197,0.08);}
+  .tag.none{color:var(--muted); border-color:var(--line);}
+
+  .card-row{font-size:12.5px; margin-bottom:8px; color:var(--text);}
+  .card-row .k{color:var(--muted); font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:2px;}
+  .card-actions{display:flex; gap:8px; margin-top:12px;}
+  .mini-btn{
+    background:none; border:1px solid var(--line); color:var(--muted); font-size:11px;
+    padding:5px 9px; border-radius:6px; cursor:pointer; font-family:var(--sans);
+  }
+  .mini-btn:hover{color:var(--cyan); border-color:var(--cyan);}
+
+  .footer-note{margin-top:26px; font-size:11.5px; color:#5b6d8f; text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <div class="hdr-left">
+      <p class="eyebrow">EuroSpaceHub Strasbourg &middot; 7 July &middot; Security &amp; Defense splinter</p>
+      <h1>Dual-Use Canvas</h1>
+      <p class="sub">Run your project through the dual-use lens. Everyone's entries land on the shared board on the right — live, for the whole call to see and pull from for the 14:50 pitch.</p>
+    </div>
+    <div class="badge">Facilitator: <b>Darius</b> &middot; Shared board — <b>visible to everyone with this link</b></div>
+  </div>
+
+  <details class="howto">
+    <summary>How this works (read once, then ignore)</summary>
+    <div class="body">
+      <ol>
+        <li>Fill in the form on the left for <b>your own project</b> — takes about 3 minutes.</li>
+        <li>Hit <code>Add to board</code>. Your card appears on the right, visible to everyone on the call.</li>
+        <li>Submitting again with the <b>same name + project</b> updates your existing card instead of duplicating it.</li>
+        <li>The board doesn't push updates automatically — tap <code>Refresh board</code> (or wait for the 10s auto-refresh) to see new entries from others.</li>
+        <li>At 14:50 each topic group gets 5 minutes — use the <code>Copy pitch</code> button on your card to grab a ready-to-read summary.</li>
+      </ol>
+    </div>
+  </details>
+
+  <div class="grid">
+
+    <!-- FORM -->
+    <div class="panel">
+      <h2><span class="dot"></span>Your entry</h2>
+
+      <label>Your name + project name
+        <span class="hint">e.g. "Ana — GroundLink SAR pipeline"</span>
+      </label>
+      <input type="text" id="f-name" placeholder="Name — project">
+
+      <label>Does this have a plausible security/defense angle?
+        <span class="hint">"No" is a completely valid answer — don't force one that isn't there.</span>
+      </label>
+      <div class="radio-row" id="f-hasangle">
+        <label class="opt" data-val="Yes"><input type="radio" name="hasangle">Yes</label>
+        <label class="opt" data-val="Maybe"><input type="radio" name="hasangle">Not sure</label>
+        <label class="opt" data-val="No"><input type="radio" name="hasangle">No</label>
+      </div>
+
+      <label>Civil use
+        <span class="hint">What's the peaceful, scientific, or commercial purpose, today?</span>
+      </label>
+      <textarea id="f-civil" placeholder="e.g. Daily crop-stress imaging for smallholder cooperatives..."></textarea>
+
+      <label>Defense application &amp; buyer
+        <span class="hint">Who in security/defense would want this, and for what effect? (Skip if "No" above — Ignition Q4 / Q8)</span>
+      </label>
+      <textarea id="f-defense" placeholder="e.g. Border-region agencies, for change-detection over unmonitored crossings..."></textarea>
+
+      <label>Which friction bites hardest?
+        <span class="hint">Ignition Q9 — this becomes your "need for support" ask</span>
+      </label>
+      <select id="f-friction">
+        <option value="">— select —</option>
+        <option value="speed">Speed vs. process (sprints vs. procurement)</option>
+        <option value="open">Openness vs. classification (publish vs. protect)</option>
+        <option value="sov">Mission vs. sovereignty (data residency, export rules)</option>
+        <option value="obj">Science vs. objective (question vs. effect)</option>
+        <option value="none">Not applicable</option>
+      </select>
+      <div class="friction-ref">
+        <div><b>Speed vs process</b> — find the fast doors (innovation units, not main procurement)</div>
+        <div><b>Openness vs classification</b> — keep the science publishable, wall off the application</div>
+        <div><b>Mission vs sovereignty</b> — data residency &amp; ITAR/EAR aren't red tape, they're the point</div>
+        <div><b>Science vs objective</b> — win by delivering their effect AND advancing the science</div>
+      </div>
+
+      <label>First collaboration step
+        <span class="hint">Who do you call? What do you offer them first? (Ignition Q9)</span>
+      </label>
+      <textarea id="f-step" placeholder="e.g. Reach out to [national defense innovation unit] with a 2-week pilot offer on 3 archive scenes..."></textarea>
+
+      <label>Dual-benefit pitch — one sentence
+        <span class="hint">Delivers their objective AND advances the science. (Feeds Ignition Q2 / Q4)</span>
+      </label>
+      <textarea id="f-pitch" style="min-height:40px" placeholder="e.g. Our SAR pipeline gives border agencies change-detection at 1/10th the cost of tasked imagery, while banking the same data for our flood-mapping research."></textarea>
+
+      <button class="submit-btn" id="submit-btn">Add to board</button>
+      <div class="status-msg" id="status"></div>
+    </div>
+
+    <!-- BOARD -->
+    <div class="panel">
+      <div class="board-hdr">
+        <h2 style="margin:0;"><span class="dot"></span>Live board</h2>
+        <button class="refresh-btn" id="refresh-btn">&#8635; refresh board</button>
+      </div>
+      <div id="board"></div>
+    </div>
+
+  </div>
+
+  <p class="footer-note">Built for the security &amp; defense splinter session — Dual-Use by Design &middot; entries are stored on a shared board tied to this artifact, not saved to any of your personal accounts.</p>
+
+</div>
+
+<script>
+
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyC4FLt5eoQkudlPf2ls7hZlbH1ytIa1jt4",
+  authDomain: "dual-use-canvas.firebaseapp.com",
+  projectId: "dual-use-canvas",
+  storageBucket: "dual-use-canvas.firebasestorage.app",
+  messagingSenderId: "847372662646",
+  appId: "1:847372662646:web:5624b54b24b5c90914ac57",
+  measurementId: "G-BKEN4PX1QP"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const STORE_KEY = 'eurospacehub-dualuse-board-v1';
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const submitBtn = document.getElementById('submit-btn');
+const refreshBtn = document.getElementById('refresh-btn');
+
+const FRICTION_LABEL = {
+  speed: {label:'Speed vs process', cls:'speed'},
+  open: {label:'Openness vs classification', cls:'open'},
+  sov: {label:'Mission vs sovereignty', cls:'sov'},
+  obj: {label:'Science vs objective', cls:'obj'},
+  none: {label:'N/A', cls:'none'}
+};
+
+function slug(s){
+  return s.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'anon-' + Date.now();
+}
+
+// radio-style option selection
+document.querySelectorAll('#f-hasangle .opt').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('#f-hasangle .opt').forEach(o=>o.classList.remove('sel'));
+    opt.classList.add('sel');
+    opt.dataset.chosen = 'true';
+  });
+});
+function getHasAngle(){
+  const sel = document.querySelector('#f-hasangle .opt.sel');
+  return sel ? sel.dataset.val : '';
+}
+
+async function loadBoard(){
+  try{
+    const res = await window.storage.get(STORE_KEY, true);
+    const entries = res && res.value ? JSON.parse(res.value) : [];
+    renderBoard(entries);
+  }catch(e){
+    // key doesn't exist yet — empty board, not an error
+    renderBoard([]);
+  }
+}
+
+function renderBoard(entries){
+  if(!entries.length){
+    boardEl.innerHTML = '<div class="empty">No entries yet — be the first to add your project.</div>';
+    return;
+  }
+  entries.sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
+  boardEl.innerHTML = entries.map(e=>{
+    const fr = FRICTION_LABEL[e.friction] || FRICTION_LABEL.none;
+    const angleTag = e.hasAngle === 'No'
+      ? '<span class="tag none">no angle</span>'
+      : e.hasAngle === 'Maybe'
+        ? '<span class="tag" style="color:#8fa2c4;border-color:#8fa2c4;">unsure</span>'
+        : `<span class="tag ${fr.cls}">${fr.label}</span>`;
+    return `
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <div class="card-title">${escapeHtml(e.project || '(untitled project)')}</div>
+            <div class="card-who">${escapeHtml(e.name || 'anon')}</div>
+          </div>
+          ${angleTag}
+        </div>
+        ${e.civil ? `<div class="card-row"><span class="k">Civil use</span>${escapeHtml(e.civil)}</div>` : ''}
+        ${e.defense ? `<div class="card-row"><span class="k">Defense application</span>${escapeHtml(e.defense)}</div>` : ''}
+        ${e.step ? `<div class="card-row"><span class="k">First step</span>${escapeHtml(e.step)}</div>` : ''}
+        ${e.pitch ? `<div class="card-row"><span class="k">Dual-benefit pitch</span><em>${escapeHtml(e.pitch)}</em></div>` : ''}
+        <div class="card-actions">
+          <button class="mini-btn" data-copy="${encodeURIComponent(JSON.stringify(e))}">Copy pitch</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  boardEl.querySelectorAll('[data-copy]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const e = JSON.parse(decodeURIComponent(btn.dataset.copy));
+      const text = `${e.project} — ${e.name}\n\nCivil use: ${e.civil||'—'}\nDefense application: ${e.defense||'—'}\nBiggest friction: ${(FRICTION_LABEL[e.friction]||{}).label||'—'}\nFirst step: ${e.step||'—'}\nDual-benefit pitch: ${e.pitch||'—'}`;
+      navigator.clipboard.writeText(text).then(()=>{
+        btn.textContent = 'Copied ✓';
+        setTimeout(()=>btn.textContent='Copy pitch', 1500);
+      }).catch(()=>{ btn.textContent = 'Copy failed'; });
+    });
+  });
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function submitEntry(){
+  const nameRaw = document.getElementById('f-name').value.trim();
+  if(!nameRaw){
+    showStatus('Add your name + project first.', true);
+    return;
+  }
+  const entry = {
+    key: slug(nameRaw),
+    name: nameRaw.split('—')[0]?.trim() || nameRaw,
+    project: nameRaw.includes('—') ? nameRaw.split('—').slice(1).join('—').trim() : nameRaw,
+    hasAngle: getHasAngle(),
+    civil: document.getElementById('f-civil').value.trim(),
+    defense: document.getElementById('f-defense').value.trim(),
+    friction: document.getElementById('f-friction').value,
+    step: document.getElementById('f-step').value.trim(),
+    pitch: document.getElementById('f-pitch').value.trim(),
+    updatedAt: Date.now()
+  };
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+  try{
+    let entries = [];
+    try{
+      const res = await window.storage.get(STORE_KEY, true);
+      entries = res && res.value ? JSON.parse(res.value) : [];
+    }catch(e){ entries = []; }
+
+    const idx = entries.findIndex(x=>x.key === entry.key);
+    if(idx >= 0) entries[idx] = entry; else entries.push(entry);
+
+    const result = await window.storage.set(STORE_KEY, JSON.stringify(entries), true);
+    if(!result){ throw new Error('Storage write returned empty result'); }
+
+    renderBoard(entries);
+    showStatus('Added to board ✓', false);
+  }catch(e){
+    showStatus('Could not save — check connection and try again.', true);
+  }finally{
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Add to board';
+  }
+}
+
+function showStatus(msg, isErr){
+  statusEl.textContent = msg;
+  statusEl.className = 'status-msg ' + (isErr ? 'err' : 'ok');
+}
+
+submitBtn.addEventListener('click', submitEntry);
+refreshBtn.addEventListener('click', loadBoard);
+
+loadBoard();
+setInterval(loadBoard, 10000);
+</script>
+</body>
+</html>
