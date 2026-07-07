@@ -203,9 +203,9 @@
         <span class="hint">"No" is a completely valid answer — don't force one that isn't there.</span>
       </label>
       <div class="radio-row" id="f-hasangle">
-        <label class="opt" data-val="Yes"><input type="radio" name="hasangle">Yes</label>
-        <label class="opt" data-val="Maybe"><input type="radio" name="hasangle">Not sure</label>
-        <label class="opt" data-val="No"><input type="radio" name="hasangle">No</label>
+        <label class="opt" data-val="Yes"><input type="radio" name="hasangle" value="Yes">Yes</label>
+        <label class="opt" data-val="Maybe"><input type="radio" name="hasangle" value="Maybe">Not sure</label>
+        <label class="opt" data-val="No"><input type="radio" name="hasangle" value="No">No</label>
       </div>
 
       <label>Civil use
@@ -265,34 +265,80 @@
 
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-analytics.js";
+import { getFirestore, collection, query, orderBy, getDocs, setDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyC4FLt5eoQkudlPf2ls7hZlbH1ytIa1jt4",
-  authDomain: "dual-use-canvas.firebaseapp.com",
-  projectId: "dual-use-canvas",
-  storageBucket: "dual-use-canvas.firebasestorage.app",
-  messagingSenderId: "847372662646",
-  appId: "1:847372662646:web:5624b54b24b5c90914ac57",
-  measurementId: "G-BKEN4PX1QP"
+    apiKey: "AIzaSyC4FLt5eoQkudlPf2ls7hZlbH1ytIa1jt4",
+    authDomain: "dual-use-canvas.firebaseapp.com",
+    projectId: "dual-use-canvas",
+    storageBucket: "dual-use-canvas.firebasestorage.app",
+    messagingSenderId: "847372662646",
+    appId: "1:847372662646:web:5624b54b24b5c90914ac57",
+    measurementId: "G-BKEN4PX1QP"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
+const db = getFirestore(app);
+const entriesCollection = collection(db, 'boardEntries');
 const STORE_KEY = 'eurospacehub-dualuse-board-v1';
 const boardEl = document.getElementById('board');
 const statusEl = document.getElementById('status');
 const submitBtn = document.getElementById('submit-btn');
 const refreshBtn = document.getElementById('refresh-btn');
+
+async function firebaseGetEntries(){
+  const q = query(entriesCollection, orderBy('updatedAt', 'desc'));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(docSnap => ({ key: docSnap.id, ...docSnap.data() }));
+}
+
+async function firebaseSaveEntry(entry){
+  await setDoc(doc(entriesCollection, entry.key), entry);
+}
+
+async function firebaseDeleteEntry(key){
+  await deleteDoc(doc(entriesCollection, key));
+}
+
+async function firebaseSaveEntries(entries){
+  const tasks = entries.map(entry => firebaseSaveEntry(entry));
+  await Promise.all(tasks);
+}
+
+async function storageGet(key){
+  if(window.storage && typeof window.storage.get === 'function'){
+    return window.storage.get(key, true);
+  }
+  try{
+    const entries = await firebaseGetEntries();
+    return { value: JSON.stringify(entries) };
+  }catch(e){
+    return { value: localStorage.getItem(key) };
+  }
+}
+
+async function storageSet(key, value){
+  if(window.storage && typeof window.storage.set === 'function'){
+    return window.storage.set(key, value, true);
+  }
+
+  const parsed = JSON.parse(value);
+  try{
+    if(Array.isArray(parsed)){
+      await firebaseSaveEntries(parsed);
+    }else if(parsed && typeof parsed === 'object'){
+      await firebaseSaveEntry(parsed);
+    }
+  }catch(e){
+    // Firestore may be unavailable; fall back to localStorage
+  }
+  localStorage.setItem(key, value);
+  return { value };
+}
 
 const FRICTION_LABEL = {
   speed: {label:'Speed vs process', cls:'speed'},
@@ -307,21 +353,29 @@ function slug(s){
 }
 
 // radio-style option selection
-document.querySelectorAll('#f-hasangle .opt').forEach(opt=>{
+const angleOptions = document.querySelectorAll('#f-hasangle .opt');
+angleOptions.forEach(opt=>{
+  const input = opt.querySelector('input');
   opt.addEventListener('click', ()=>{
-    document.querySelectorAll('#f-hasangle .opt').forEach(o=>o.classList.remove('sel'));
+    angleOptions.forEach(o=>o.classList.remove('sel'));
     opt.classList.add('sel');
-    opt.dataset.chosen = 'true';
+    if(input) input.checked = true;
   });
+  if(input){
+    input.addEventListener('change', ()=>{
+      angleOptions.forEach(o=>o.classList.remove('sel'));
+      if(input.checked) opt.classList.add('sel');
+    });
+  }
 });
 function getHasAngle(){
-  const sel = document.querySelector('#f-hasangle .opt.sel');
-  return sel ? sel.dataset.val : '';
+  const selectedInput = document.querySelector('#f-hasangle input:checked');
+  return selectedInput ? selectedInput.value : '';
 }
 
 async function loadBoard(){
   try{
-    const res = await window.storage.get(STORE_KEY, true);
+    const res = await storageGet(STORE_KEY);
     const entries = res && res.value ? JSON.parse(res.value) : [];
     renderBoard(entries);
   }catch(e){
@@ -358,6 +412,7 @@ function renderBoard(entries){
         ${e.pitch ? `<div class="card-row"><span class="k">Dual-benefit pitch</span><em>${escapeHtml(e.pitch)}</em></div>` : ''}
         <div class="card-actions">
           <button class="mini-btn" data-copy="${encodeURIComponent(JSON.stringify(e))}">Copy pitch</button>
+          <button class="mini-btn" data-delete="${encodeURIComponent(e.key)}">Delete</button>
         </div>
       </div>
     `;
@@ -373,12 +428,34 @@ function renderBoard(entries){
       }).catch(()=>{ btn.textContent = 'Copy failed'; });
     });
   });
+  boardEl.querySelectorAll('[data-delete]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const key = decodeURIComponent(btn.dataset.delete);
+      await deleteEntry(key);
+      loadBoard();
+    });
+  });
 }
 
 function escapeHtml(s){
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}
+
+async function deleteEntry(key){
+  try{
+    if(window.storage && typeof window.storage.delete === 'function'){
+      await window.storage.delete(STORE_KEY, key);
+    }
+    const res = await storageGet(STORE_KEY);
+    const entries = res && res.value ? JSON.parse(res.value) : [];
+    const filtered = entries.filter(e => e.key !== key);
+    await storageSet(STORE_KEY, JSON.stringify(filtered));
+    showStatus('Card deleted ✓', false);
+  }catch(e){
+    showStatus('Could not delete card.', true);
+  }
 }
 
 async function submitEntry(){
@@ -405,14 +482,14 @@ async function submitEntry(){
   try{
     let entries = [];
     try{
-      const res = await window.storage.get(STORE_KEY, true);
+      const res = await storageGet(STORE_KEY);
       entries = res && res.value ? JSON.parse(res.value) : [];
     }catch(e){ entries = []; }
 
     const idx = entries.findIndex(x=>x.key === entry.key);
     if(idx >= 0) entries[idx] = entry; else entries.push(entry);
 
-    const result = await window.storage.set(STORE_KEY, JSON.stringify(entries), true);
+    const result = await storageSet(STORE_KEY, JSON.stringify(entries));
     if(!result){ throw new Error('Storage write returned empty result'); }
 
     renderBoard(entries);
