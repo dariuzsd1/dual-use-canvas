@@ -423,8 +423,8 @@ function renderBoard(entries){
         ${e.step ? `<div class="card-row"><span class="k">First step</span>${escapeHtml(e.step)}</div>` : ''}
         ${e.pitch ? `<div class="card-row"><span class="k">Dual-benefit pitch</span><em>${escapeHtml(e.pitch)}</em></div>` : ''}
         <div class="card-actions">
-          <button class="mini-btn" data-copy="${encodeURIComponent(JSON.stringify(e))}">Copy pitch</button>
-          <button class="mini-btn" data-delete="${encodeURIComponent(e.key)}">Delete</button>
+          <button type="button" class="mini-btn" data-copy="${encodeURIComponent(JSON.stringify(e))}">Copy pitch</button>
+          <button type="button" class="mini-btn" data-delete="${encodeURIComponent(e.key)}">Delete</button>
         </div>
       </div>
     `;
@@ -460,10 +460,15 @@ async function deleteEntry(key){
     if(window.storage && typeof window.storage.delete === 'function'){
       await window.storage.delete(STORE_KEY, key);
     }
+    try{
+      await firebaseDeleteEntry(key);
+    }catch(e){
+      // Firestore may be unavailable or inaccessible, continue with local fallback
+    }
     const res = await storageGet(STORE_KEY);
     const entries = res && res.value ? JSON.parse(res.value) : [];
     const filtered = entries.filter(e => e.key !== key);
-    await storageSet(STORE_KEY, JSON.stringify(filtered));
+    localStorage.setItem(STORE_KEY, JSON.stringify(filtered));
     showStatus('Card deleted ✓', false);
   }catch(e){
     showStatus('Could not delete card.', true);
