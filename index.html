@@ -132,7 +132,15 @@
     font-size:11px; padding:6px 10px; border-radius:7px; cursor:pointer;
   }
   .refresh-btn:hover{color:var(--cyan); border-color:var(--cyan);}
+  .board-panel{
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
   #board{
+    flex:1 1 auto;
+    min-height:0;
+    width:100%;
     max-height: calc(100vh - 280px);
     overflow-y: auto;
     padding-right: 4px;
@@ -263,7 +271,7 @@
     </div>
 
     <!-- BOARD -->
-    <div class="panel">
+    <div class="panel board-panel">
       <div class="board-hdr">
         <h2 style="margin:0;"><span class="dot"></span>Live board</h2>
         <button class="refresh-btn" id="refresh-btn">&#8635; refresh board</button>
