@@ -132,6 +132,18 @@
     font-size:11px; padding:6px 10px; border-radius:7px; cursor:pointer;
   }
   .refresh-btn:hover{color:var(--cyan); border-color:var(--cyan);}
+  #board{
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  #board::-webkit-scrollbar {
+    width: 10px;
+  }
+  #board::-webkit-scrollbar-thumb {
+    background: rgba(79,209,197,0.25);
+    border-radius: 10px;
+  }
   .empty{color:var(--muted); font-size:13.5px; padding:20px 0; text-align:center; border:1px dashed var(--line); border-radius:10px;}
 
   .card{
